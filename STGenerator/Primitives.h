@@ -153,15 +153,20 @@ unique_ptr<Treck> make_treck(const Edge& e1, const Edge& e2) {
   unsigned e1_p1, e1_p2, e2_p1, e2_p2;
   tie(e1_p1, e1_p2, e2_p1, e2_p2) = make_tuple(e1.get_distance(e2.p1), e1.get_distance(e2.p1), e1.get_distance(e2.p1), e1.get_distance(e2.p1));
   auto list = { tie(e1_p1, e2.p1, e1), tie(e1_p2, e2.p2, e1), tie(e2_p1, e1.p1, e2), tie(e2_p2, e1.p2, e2) };
-  auto distance = min(list);
-  return make_treck(get<1>(distance), get<2>(distance));
+  auto min_elem = list.begin();
+  for (auto& elem : list) {
+    if (get<0>(*min_elem) > get<0>(elem)) {
+      min_elem = &elem;
+    }
+  }
+  return make_treck(get<1>(*min_elem), get<2>(*min_elem));
 }
 
 unique_ptr<Treck> make_treck(const STree& t1, const STree& t2) {
-  if (t1.edges.empty && t2.edges.empty) {
+  if (t1.edges.empty() && t2.edges.empty()) {
     return make_treck(t1.points.front(), t2.points.front());
   }
-  else if (!t1.edges.empty && t2.edges.empty) {
+  else if (!t1.edges.empty() && t2.edges.empty()) {
     auto& min_point = t2.points.front();
     auto min_edge = &t1.edges.front();
     auto min_distance = min_edge->get_distance(min_point);
