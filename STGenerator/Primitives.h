@@ -31,7 +31,7 @@ public:
       assert(p1.x != p2.y && "Edge could be done only between points on one line");
   }
   bool liesOpposite(const Point& p) const {
-    if (p1.x <= p.x <= p2.x || p2.x <= p.x <= p1.x || p1.y <= p.x <= p2.y || p2.y <= p.x <= p1.y)
+    if (p1.x < p.x < p2.x || p2.x < p.x < p1.x || p1.y < p.x < p2.y || p2.y < p.x < p1.y)
       return true;
     else
       return false;
@@ -50,57 +50,15 @@ public:
   unsigned get_distance(const Edge& s) const {
     return min({ get_distance(s.p1), get_distance(s.p2), s.get_distance(p1), s.get_distance(p2) });
   }
- /* tuple<unique_ptr<Point>, unique_ptr<Segment>, unique_ptr<Segment>> get_ShniederPoint(const Segment& s) const {
-    unsigned a, b, c, d;
-    tie(a, b, c, d) = make_tuple(get_distance(s.p1), get_distance(s.p2), s.get_distance(p1), s.get_distance(p2));
-    auto distance = min({ a, b, c, d });
-    const Segment* seg = nullptr;
-    const Point* point = nullptr;
-    switch (distance)
-    {
-    a:
-      seg = this;
-      point = &s.p1;
-      break;
-    b:
-      seg = this;
-      point = &s.p2;
-      break;
-    c:
-      seg = &s;
-      point = &p1;
-      break;
-    d:
-      seg = &s;
-      point = &p2;
-      break;
-    default:
-      break;
-    }
-    if (seg->isHorizontal && (seg->p1.x <= point->x <= seg->p2.x || seg->p2.x <= point->x <= seg->p1.x)) {
-      auto SchneiderPoint = make_unique<Point>(point->x, seg->p1.y);
-      auto seg_y = make_unique<Segment>(*SchneiderPoint, point);
-      return make_tuple(SchneiderPoint, nullptr, seg_y);
-    }
-    else if (seg->p1.y <= point->y <= seg->p2.y || seg->p2.y <= point->y <= seg->p1.y) {
-      auto SchneiderPoint = make_unique<Point>(seg->p1.x, point->y);
-      auto seg_x = make_unique<Segment>(*SchneiderPoint, point);
-      return make_tuple(SchneiderPoint, seg_x, nullptr);
-    }
-    else {
-      const Point* seg_point = nullptr;
-      if (point->get_distance(seg->p1) == distance) {
-        seg_point = &seg->p1;
-      }
-      else {
-        seg_point = &seg->p2;
-      }
-      auto SchneiderPoint = make_unique<Point>(seg_point->x, point->y);
-      auto seg_x = make_unique<Segment>(*SchneiderPoint, point);
-      auto seg_y = make_unique<Segment>(*SchneiderPoint, point);
-      return make_tuple(SchneiderPoint, seg_x, seg_y);
-    }
-  }*/
+};
+
+class STree {
+public:
+  vector<Point> points;
+  vector<Edge> edges;
+  STree(int x, int y) {
+    points.push_back(Point(x, y));
+  }
 };
 
 class Treck {
@@ -199,3 +157,38 @@ unique_ptr<Treck> make_treck(const Edge& e1, const Edge& e2) {
   return make_treck(get<1>(distance), get<2>(distance));
 }
 
+unique_ptr<Treck> make_treck(const STree& t1, const STree& t2) {
+  if (t1.edges.empty && t2.edges.empty) {
+    return make_treck(t1.points.front(), t2.points.front());
+  }
+  else if (!t1.edges.empty && t2.edges.empty) {
+    auto& min_point = t2.points.front();
+    auto min_edge = &t1.edges.front();
+    auto min_distance = min_edge->get_distance(min_point);
+    for (auto e1 = ++t1.edges.begin(); e1 != t1.edges.end(); ++e1) {
+      if (min_distance > e1->get_distance(min_point)) {
+        min_distance = e1->get_distance(min_point);
+        min_edge = &*e1;
+      }
+    }
+    return make_treck(min_point, *min_edge);
+  }
+  else if (t1.edges.empty() && !t2.edges.empty()) {
+    return make_treck(t2, t1);
+  }
+  else {
+    auto min_edge1 = t1.edges.begin();
+    auto min_edge2 = t2.edges.begin();
+    auto min_distance = min_edge1->get_distance(*min_edge2);
+    for (auto e1 = ++t1.edges.begin(); e1 != t1.edges.end(); ++e1) {
+      for (auto e2 = ++t2.edges.begin(); e2 != t2.edges.end(); ++e2) {
+        if (min_distance > e1->get_distance(*e2)) {
+          min_distance = e1->get_distance(*e2);
+          min_edge1 = e1;
+          min_edge2 = e2;
+        }
+      }
+    }
+    return make_treck(*min_edge1, *min_edge2);
+  }
+}
