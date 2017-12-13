@@ -6,6 +6,7 @@
 #include <tuple>
 #include <memory>
 #include <cassert>
+#include <ostream>
 
 using namespace std;
 
@@ -17,14 +18,21 @@ public:
   unsigned get_distance(const Point& p) const {
     return abs(x - p.x) + abs(y - p.y);
   }
+  friend ostream& operator<<(ostream& os, const Point& p);
 };
+
+ostream& operator<<(ostream& os, const Point& p) {
+  return os << "<point x=“" << p.x << "” y=“" << p.y << "” layer=“pins” type=“pin”>";
+}
+
+class Treck;
 
 class Edge {
 public:
-  const Point& p1;
-  const Point& p2;
+  const Point* p1;
+  const Point* p2;
   bool isHorizontal;
-  Edge(const Point& p1, const Point& p2) : p1(p1), p2(p2)
+  Edge(const Point& p1, const Point& p2) : p1(&p1), p2(&p2)
   {
     isHorizontal = p1.y == p2.y;
     if (!isHorizontal)
@@ -50,7 +58,13 @@ public:
   unsigned get_distance(const Edge& s) const {
     return min({ get_distance(s.p1), get_distance(s.p2), s.get_distance(p1), s.get_distance(p2) });
   }
+  friend ostream& operator<<(ostream& os, const Edge& e);
 };
+
+ostream& operator<<(ostream& os, const Edge& e) {
+  return os << "<segment x1=“" << e.p1.x << "” y1=“" << e.p1.y <<
+    "” x2=“" << e.p2.x << "” y2=“" << e.p2.y << "” layer=“" << (e.isHorizontal ? "m2" : "m3") << "”";
+}
 
 class STree {
 public:
@@ -58,6 +72,21 @@ public:
   vector<Edge> edges;
   STree(int x, int y) {
     points.push_back(Point(x, y));
+  }
+  void add_point(const Point& p) {
+    points.push_back(move(p));
+  }
+  void add_edge(const Edge& e) {
+    edges.push_back(move(e));
+  }
+  void add_treck(unique_ptr<Treck> t);
+  void add_tree(const STree& tree) {
+    for (auto& e : tree.edges) {
+      add_edge(e);
+    }
+    for (auto& p : tree.points) {
+      add_point(p);
+    }
   }
 };
 
@@ -69,11 +98,23 @@ protected:
 public:
   Treck(unsigned distance) : distance(distance) {}
   virtual ~Treck() = default;
-  virtual treck_type release() = 0;
+  virtual treck_type release() const = 0;
   unsigned get_distance() {
     return distance;
   }
 };
+
+void STree::add_treck(unique_ptr<Treck> t){
+  vector<Point> treck_points;
+  vector<Edge> treck_edges;
+  tie(treck_points, treck_edges) = t->release();
+  for (auto& p : treck_points) {
+    add_point(p);
+  }
+  for (auto& e : treck_edges) {
+    add_edge(e);
+  }
+}
 
 class PPTreck : public Treck {
 protected:
@@ -87,7 +128,7 @@ public:
   PPStraight(const Point& p1, const Point& p2) : PPTreck(p1, p2) {
     assert(p1.x == p2.x || p1.y == p2.y && "Couldn't create straight treck between points");
   }
-  treck_type release() override {
+  treck_type release() const override {
     return make_tuple<vector<Point>, vector<Edge>>({}, { Edge(p1, p2) });
   }
 };
@@ -97,9 +138,9 @@ public:
   PPAngle(const Point& p1, const Point& p2) : PPTreck(p1, p2) {
     assert(p1.x != p2.x && p1.y != p2.y && "Couldn't create angle treck between points");
   }
-  treck_type release() override {
+  treck_type release() const override {
     auto p = Point(p1.x, p2.y);
-    return make_tuple<vector<Point>, vector<Edge>>({p}, { Edge(p1, p), Edge(p2, p) });
+    return make_tuple<vector<Point>, vector<Edge>>({move(p)}, { Edge(p1, p), Edge(p2, p) });
   }
 };
 
@@ -110,7 +151,7 @@ public:
   PETreck(const Point& p, const Edge& e) : Treck(e.get_distance(p)), e(e), p(p){
     assert( e.liesOpposite(p) && "Cannot creat treck because point doesn't lies opposite edge");
   }
-  treck_type release() override {
+  treck_type release() const override {
     int x, y;
     if (e.isHorizontal) {
       x = p.x;

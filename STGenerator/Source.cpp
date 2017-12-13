@@ -65,9 +65,22 @@ int main() {
   auto p1 = Point(10, 20);
   auto p2 = Point(45, 46);
   printf("(%d,%d)(%d,%d) DISTANCE = %d", p1.x, p1.y, p2.x, p2.y, PPAngle(p1, p2).get_distance());
-  auto t = PPAngle(p1, p2).release();
-  cout << endl << get<1>(t)[0].isHorizontal << " " << get<1>(t)[1].isHorizontal;
-  auto tt = make_treck(p1, p2)->release();
-  cout << endl << get<1>(tt)[0].isHorizontal << " " << get<1>(tt)[1].isHorizontal;
+  {
+    auto t = PPAngle(p1, p2).release();
+    cout << endl << get<1>(t)[0].isHorizontal << " " << get<1>(t)[1].isHorizontal;
+  }
+  {
+    auto t = make_treck(p1, p2)->release();
+    cout << endl << get<1>(t)[0].isHorizontal << " " << get<1>(t)[1].isHorizontal;
+  }
+  {
+    auto tree1 = STree(1, 1);
+    auto tree2 = STree(3, 4);
+    auto t = make_treck(tree1, tree2)->release();
+    cout << endl << get<0>(t).front().x << " " << get<0>(t).front().y;
+    tree1.add_tree(tree2);
+    tree1.add_treck(make_treck(tree1, tree2));
+    cout << endl << tree1.points[0] << endl << tree1.points[1] << endl << tree1.edges[0];
+  }
   getchar();
 }
