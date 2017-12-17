@@ -144,9 +144,18 @@
   <ItemGroup>
     <ClCompile Include="Primitives.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="tinyxml\tinystr.cpp" />
+    <ClCompile Include="tinyxml\tinyxml.cpp" />
+    <ClCompile Include="tinyxml\tinyxmlerror.cpp" />
+    <ClCompile Include="tinyxml\tinyxmlparser.cpp" />
+    <ClCompile Include="Treck.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Primitives.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="tinyxml\tinystr.h" />
+    <ClInclude Include="tinyxml\tinyxml.h" />
+    <ClInclude Include="Treck.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
