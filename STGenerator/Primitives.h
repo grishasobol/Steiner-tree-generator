@@ -9,6 +9,7 @@
 #include <ostream>
 #include <iostream>
 #include <numeric>
+#include <string>
 
 using namespace std;
 
@@ -16,22 +17,24 @@ class Point {
 public:
   int x;
   int y;
+  bool isSteiner = true;
+  string layer = "pins";
+  string type = "pin";
   Point(unsigned x, unsigned y) : x(x), y(y) {}
-  Point(const Point& p) {
-    x = p.x;
-    y = p.y;
-    cout << "POINT_COPY" << endl;
+  Point(unsigned x, unsigned y, string layer, string type) : x(x), y(y), layer(layer), type(type) {}
+  Point(unsigned x, unsigned y, bool isSteiner) : x(x), y(y), isSteiner(isSteiner) {
+    if (isSteiner) {
+      layer = "m2_m3";
+      type = "via";
+    }
   }
-  Point& operator=(Point& p) {
-    x = p.x;
-    y = p.y;
-    cout << "POINT_COPY" << endl;
-  }
+  //Point(const Point& p) : x(p.x), y(p.y), isSteiner(p.isSteiner) {}
   unsigned get_distance(const Point& p) const {
     return abs(x - p.x) + abs(y - p.y);
   }
   friend ostream& operator<<(ostream& os, const Point& p) {
-    return os << "<point x=\"" << p.x << "\" y=\"" << p.y << "\" layer=\"pins\" type=\"pin\"/>";
+    return os << "<point x=\"" << p.x << "\" y=\"" << p.y << "\" layer=\"" <<
+      p.layer << "\" type=\"" << p.type << "\"/>";
   }
 };
 
@@ -44,7 +47,7 @@ public:
   {
     isHorizontal = p1.y == p2.y;
     if (!isHorizontal)
-      assert(p1.x != p2.y && "Edge could be done only between points on one line");
+      assert(p1.x == p2.x && "Edge could be done only between points on one line");
   }
   bool liesOpposite(const Point& p) const {
     if ((p1->x < p.x && p.x < p2->x) || 
@@ -56,14 +59,17 @@ public:
       return false;
   }
   unsigned get_distance(const Point& p) const {
-    if (isHorizontal && (p1->x <= p.x && p.x <= p2->x ||
-      p2->x <= p.x && p.x <= p1->x)) {
-      return abs(p1->y - p.y);
+    if (liesOpposite(p)) {
+      return isHorizontal ? abs(p1->y - p.y) : abs(p1->x - p.x);
     }
-    else if (p1->y <= p.y && p.y <= p2->y ||
-      p2->y <= p.y && p.y <= p1->y) {
-      return abs(p1->x - p.x);
-    }
+    //if (isHorizontal && (p1->x <= p.x && p.x <= p2->x ||
+    //  p2->x <= p.x && p.x <= p1->x)) {
+    //  return abs(p1->y - p.y);
+    //}
+    //else if (p1->y <= p.y && p.y <= p2->y ||
+    //  p2->y <= p.y && p.y <= p1->y) {
+    //  return abs(p1->x - p.x);
+    //}
     else {
       return min(p.get_distance(*p1), p.get_distance(*p2));
     }
@@ -91,10 +97,9 @@ public:
   STree(int x, int y) {
     points.push_back(make_shared<Point>(x, y));
   }
-  STree(const Point& p) : STree(p.x, p.y) {}
-  //STree(const STree& tree) {
-  //  cout << "COPY_TREE" << endl;
-  //}
+  STree(const Point& p) {
+    points.push_back(make_shared<Point>(p));
+  }
   void add_point(shared_ptr<Point> p) {
     points.push_back(p);
   }
@@ -113,7 +118,7 @@ public:
     auto max_y = max_element(t.points.begin(), t.points.end(), [](auto& p1, auto& p2) {return p1->y < p2->y; });
     auto m = max_y->get()->y;
     //os << "<net " << "n=\"" << n << "\" m=\"" << m << "\">\n";
-    os << "<net " << "grid_size=\"" << max(n,m) + 1 << "\">\n";
+    os << "<net " << "grid_size=\"" << max(n,m) + 1 << "\" point_count=\"" << t.points.size() << "\">\n";
     for (auto& p : t.points) {
       os << *p.get() << "\n";
     }

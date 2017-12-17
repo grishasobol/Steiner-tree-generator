@@ -1,6 +1,9 @@
 #pragma once
 #include "Primitives.h"
 #include <cassert>
+#include <fstream>
+
+extern ofstream debug_file;
 
 using namespace std;
 
@@ -45,9 +48,9 @@ public:
   void release(STree& tree) const override {
     shared_ptr<Point> p;
     if (orentation)
-      p = make_shared<Point>(p1.x, p2.y);
+      p = make_shared<Point>(p1.x, p2.y, true);
     else
-      p = make_shared<Point>(p2.x, p1.y);
+      p = make_shared<Point>(p2.x, p1.y, true);
     tree.add_point(p);
     tree.add_edge(make_shared<Edge>(p1, *p.get()));
     tree.add_edge(make_shared<Edge>(p2, *p.get()));
@@ -77,7 +80,7 @@ public:
       x = e.p1->x;
       y = p.y;
     }
-    auto sp = make_shared<Point>(x, y);
+    auto sp = make_shared<Point>(x, y, true);
     tree.add_point(sp);
     tree.add_edge(make_shared<Edge>(p, *sp.get()));
   }
